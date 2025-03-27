@@ -32,7 +32,7 @@ class GraphVisualizerApp : Application() {
 
     override fun start(primaryStage: Stage) {
         val inputLabel = Label("Graph Input (Edge List, e.g., A -> B):")
-        graphInputArea.text = "A -> B\nB -> C\nC -> A"  // Default example
+        graphInputArea.text = "A -> B : 2\nB -> C:3\nC -> A:4"  // Default example
         graphInputArea.textProperty().addListener { _, _, _ ->
             updateDelay.stop()
             updateDelay.setOnFinished { updateGraph() }
@@ -85,7 +85,9 @@ class GraphVisualizerApp : Application() {
         val inputText = graphInputArea.text.trim()
         val edges = inputText.lines().filter { it.contains("->") }.map { it.trim() }
 
-        val vertices = edges.flatMap { it.split("->").map { it.trim() } }.toSet()
+        //val vertices = edges.flatMap { it.split("->").map { it.trim() } }.toSet()
+        val vertices = edges.flatMap{
+            it -> it.split("->", ":").take(2).map { it.trim() }}.toSet()
         Platform.runLater {
             // Update the list of vertices if new ones are added
             val newVertices = vertices - vertexToggleMap.keys
@@ -118,9 +120,11 @@ class GraphVisualizerApp : Application() {
             append("@startuml\n")
             enabledVertices.forEach { append("rectangle \"$it\"\n") }
             edges.forEach { edge ->
-                val parts = edge.split("->").map { it.trim() }
+                val parts = edge.split("->", ":").map { it.trim() }
                 if (parts.size == 2 && parts[0] in enabledVertices && parts[1] in enabledVertices) {
                     append("${parts[0]} --> ${parts[1]}\n")
+                } else if (parts.size == 3 && parts[0] in enabledVertices && parts[1] in enabledVertices) {
+                    append("${parts[0]} --> ${parts[1]} : ${parts[2]}\n")
                 }
             }
             append("@enduml\n")

@@ -10,6 +10,7 @@ import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.*
+import javafx.stage.FileChooser
 import javafx.stage.Stage
 import net.sourceforge.plantuml.FileFormat
 import net.sourceforge.plantuml.FileFormatOption
@@ -89,7 +90,11 @@ class GraphVisualizerApp : Application() {
         loadGraphMedium.setOnMouseEntered { loadGraphMedium.style = "-fx-background-color: lightblue;" }
         loadGraphMedium.setOnMouseExited {loadGraphMedium.style = ""}
         loadGraphMedium.setOnMouseClicked {loadGraphMedium.style = "-fx-border-color: blue"}
-
+        val loadGraphFromFile = Button("Load graph from file")
+        loadGraphFromFile.setOnAction { this.loadGraphFromFileHandler(primaryStage)}
+        loadGraphFromFile.setOnMouseEntered { loadGraphFromFile.style = "-fx-background-color: lightblue;" }
+        loadGraphFromFile.setOnMouseExited {loadGraphFromFile.style = ""}
+        loadGraphFromFile.setOnMouseClicked {loadGraphFromFile.style = "-fx-border-color: blue"}
 
         // Graph Display Area
         val graphPane = StackPane()
@@ -104,7 +109,7 @@ class GraphVisualizerApp : Application() {
         graphPane.children.add(scrollPane)
 
         val root = BorderPane().apply {
-            top = VBox(5.0, inputLabel, graphInputArea, loadGraphLarge, loadGraphMedium)
+            top = VBox(5.0, inputLabel, graphInputArea, loadGraphLarge, loadGraphMedium, loadGraphFromFile)
             left = leftPane
             center = scrollPane
         }
@@ -160,6 +165,22 @@ class GraphVisualizerApp : Application() {
     private fun loadLargeGraphHandler() {
         loadGraphFromFile("exampleGraphs/largeGraph.txt")
         updateGraph()
+    }
+    private fun loadGraphFromFileHandler(primaryStage: Stage) {
+        val fileChooser = FileChooser()
+        val initialDirectory = File(System.getProperty("user.home"))
+        fileChooser.initialDirectory = initialDirectory
+        fileChooser.title = "Select file of graph to be displayed"
+        val ex1 = FileChooser.ExtensionFilter("TXT files (*.txt)", "*.txt")
+        fileChooser.extensionFilters.addAll(ex1)
+        val selectedFile = fileChooser.showOpenDialog(primaryStage)
+        if (selectedFile != null) {
+            println("Open file")
+            println(selectedFile.path)
+            loadGraphFromFile(selectedFile.path)
+        } else {
+            showAlert("Error", "No file selected")
+        }
     }
     private fun loadGraphFromFile(fileName: String) {
         val graph = readGraphPrimitive(fileName)

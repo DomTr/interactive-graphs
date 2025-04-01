@@ -4,6 +4,7 @@ import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
+import javafx.scene.Group
 import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.image.Image
@@ -27,7 +28,6 @@ class GraphVisualizerApp : Application() {
 
     private val updateDelay = PauseTransition(javafx.util.Duration(500.0))
 
-
     override fun start(primaryStage: Stage) {
         val inputLabel = Label("Graph Input (Edge List, e.g., A -> B):")
         graphInputArea.text = "A -> B : 2\nB -> C:3\nC -> A"  // Default example
@@ -37,7 +37,7 @@ class GraphVisualizerApp : Application() {
             updateDelay.play()
         }
 
-        // Vertex List Panel - logic for change
+        // Vertex List Panel change logic
         vertexListView.items = FXCollections.observableArrayList()
         vertexListView.setCellFactory { _ ->
             object : ListCell<Pair<String, SimpleBooleanProperty>>() {
@@ -62,7 +62,7 @@ class GraphVisualizerApp : Application() {
                         // Set the checkbox text and bind its selection property to the SimpleBooleanProperty
                         checkBox.text = item.first
                         //checkBox.selectedProperty().unbind()  // Unbind before re-binding
-                        checkBox.isSelected = item.second.get()  // Set initial value
+                        checkBox.isSelected = item.second.get()  // Initial value is set
                         checkBox.setOnAction {
                             item.second.set(checkBox.isSelected)  // Manually update the property
                             updateGraph()  // Redraw the graph only when toggled
@@ -78,23 +78,93 @@ class GraphVisualizerApp : Application() {
         val leftPane = VBox(10.0, Label("Vertex List:"), vertexListView)
         leftPane.prefWidth = 200.0
 
+        val loadGraphLarge = Button("Load large graph")
+        loadGraphLarge.setOnAction { this.loadLargeGraphHandler()}
+        loadGraphLarge.setOnMouseEntered { loadGraphLarge.style = "-fx-background-color: lightblue;" }
+        loadGraphLarge.setOnMouseExited {loadGraphLarge.style = ""}
+        loadGraphLarge.setOnMouseClicked {loadGraphLarge.style = "-fx-border-color: blue"}
+
+        val loadGraphMedium = Button("Load medium graph")
+        loadGraphMedium.setOnAction { this.loadMediumGraphHandler()}
+        loadGraphMedium.setOnMouseEntered { loadGraphMedium.style = "-fx-background-color: lightblue;" }
+        loadGraphMedium.setOnMouseExited {loadGraphMedium.style = ""}
+        loadGraphMedium.setOnMouseClicked {loadGraphMedium.style = "-fx-border-color: blue"}
+
+
         // Graph Display Area
-        val graphPane = StackPane(graphImageView)
+        val graphPane = StackPane()
+        val scrollPane = ScrollPane()
+        scrollPane.setPrefSize(1000.0, 1000.0)
+        val imageGroup = Group()
+        imageGroup.children.add(graphImageView)
+
+        graphImageViewSetUp(imageGroup, scrollPane)
+
+        scrollPane.content = imageGroup
+        graphPane.children.add(scrollPane)
+
         val root = BorderPane().apply {
-            top = VBox(5.0, inputLabel, graphInputArea)
+            top = VBox(5.0, inputLabel, graphInputArea, loadGraphLarge, loadGraphMedium)
             left = leftPane
-            center = graphPane
+            center = scrollPane
         }
 
         primaryStage.apply {
             title = "Graph Visualizer"
-            scene = Scene(root, 800.0, 600.0)
+            scene = Scene(root, 1000.0, 1000.0)
             show()
         }
 
         updateGraph() // Generate initial graph
     }
 
+    private fun graphImageViewSetUp(imageGroup: Group, scrollPane: ScrollPane) {
+        graphImageView.fitWidth = 700.0
+        graphImageView.fitHeight = 500.0
+        graphImageView.isPreserveRatio = true
+
+        graphImageView.setOnZoom { event ->
+            val zoomFactor = event.zoomFactor
+            graphImageView.fitWidth *= zoomFactor
+            graphImageView.fitHeight *= zoomFactor
+        }
+
+        // Panning functionality using mouse drag
+        val initialX = arrayOf(0.0)
+        val initialY = arrayOf(0.0)
+        val initialHValue = arrayOf(0.0)
+        val initialVValue = arrayOf(0.0)
+
+        imageGroup.setOnMousePressed { event ->
+            initialX[0] = event.sceneX
+            initialY[0] = event.sceneY
+            initialHValue[0] = scrollPane.hvalue
+            initialVValue[0] = scrollPane.vvalue
+        }
+
+        imageGroup.setOnMouseDragged { event ->
+            val deltaX = (event.sceneX - initialX[0]) / graphImageView.fitWidth
+            val deltaY = (event.sceneY - initialY[0]) / graphImageView.fitHeight
+
+            scrollPane.hvalue = (initialHValue[0] - deltaX).coerceIn(0.0, 1.0)
+            scrollPane.vvalue = (initialVValue[0] - deltaY).coerceIn(0.0, 1.0)
+        }
+        scrollPane.hbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
+        scrollPane.vbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
+    }
+
+    private fun loadMediumGraphHandler() {
+        loadGraphFromFile("exampleGraphs/mediumGraph.txt")
+        updateGraph()
+    }
+    private fun loadLargeGraphHandler() {
+        loadGraphFromFile("exampleGraphs/largeGraph.txt")
+        updateGraph()
+    }
+    private fun loadGraphFromFile(fileName: String) {
+        val graph = readGraphPrimitive(fileName)
+        graphInputArea.text = graph
+    }
     /** Parses the input text and updates the vertex list & diagram **/
     private fun updateGraph() {
         val inputText = graphInputArea.text.trim()
@@ -108,7 +178,7 @@ class GraphVisualizerApp : Application() {
 
             newVertices.forEach { vertexToggleMap[it] = vertexToggleMap.getOrDefault(it, SimpleBooleanProperty(true)) }
 
-            // Remove any vertices that no longer exist
+            // Remove any vertices that are disabled
             val removedVertices = vertexToggleMap.keys - vertices
             removedVertices.forEach { vertexToggleMap.remove(it) }
 
@@ -126,10 +196,20 @@ class GraphVisualizerApp : Application() {
     }
     /** Generates the PlantUML diagram and updates the ImageView **/
     private fun drawGraph(edges: List<String>) {
+
         val enabledVertices = vertexToggleMap.filterValues { it.get() }.keys
 
         val plantUmlCode = buildString {
             append("@startuml\n")
+            if (edges.size < 20 && enabledVertices.size < 20) {
+                System.setProperty("PLANTUML_LIMIT_SIZE", "4096")  // 4096 is default
+            } else if (edges.size < 100) {
+                System.setProperty("PLANTUML_LIMIT_SIZE", "8192")  // 8192 is for medium graphs
+            }
+            else { // can be adjusted as needed
+                System.setProperty("PLANTUML_LIMIT_SIZE", "16384")
+
+            }
             enabledVertices.forEach { append("rectangle \"$it\"\n") }
             edges.forEach { edge ->
 
@@ -163,14 +243,21 @@ class GraphVisualizerApp : Application() {
             FileOutputStream(outputFile).use { outputStream ->
                 reader.outputImage(outputStream, FileFormatOption(FileFormat.PNG))
             }
-
+            val image = Image(FileInputStream(outputFile))
             Platform.runLater {
-                graphImageView.image = Image(FileInputStream(outputFile))
+                graphImageView.image = image
+                graphImageView.fitWidth = image.width.coerceAtMost(700.0)
+                graphImageView.fitHeight = image.height.coerceAtMost(500.0)
+
+                val parentPane = graphImageView.parent as? Region
+                parentPane?.minWidth = graphImageView.fitWidth
+                parentPane?.minHeight = graphImageView.fitHeight
             }
         } catch (e: Exception) {
             showAlert("Error", "Invalid graph input\n${e.message}")
         }
     }
+    /** Error handling **/
     private fun showAlert(title: String, message: String) {
         Platform.runLater {
             graphImageView.image = null // Remove previous image
@@ -186,3 +273,32 @@ fun main() {
     Application.launch(GraphVisualizerApp::class.java)
 }
 
+fun readGraphPrimitive(fileName: String): String {
+    val graphString = File(fileName).bufferedReader().readLines()
+    val edges = graphString.filter { it.contains("->") }.map { it.trim() }
+    return buildString { edges.forEach { e -> append(e + "\n") } }
+}
+
+// May be not needed anymore
+fun readGraph(fileName: String) :String {
+    val graphString = File(fileName).bufferedReader().readLines()
+    val edges = graphString.filter { it.contains("->") }.map { it.trim() }
+    val vertices = edges.flatMap{
+            it -> it.split("->", ":").take(2).map { it.trim() }}.toSet()
+
+    val plantUmlCode = buildString {
+        append("@startuml\n")
+        vertices.forEach { append("rectangle \"$it\"\n") }
+        edges.forEach { edge ->
+
+            val parts = edge.split("->", ":").map { it.trim() }
+            if (parts.size == 2) {
+                append("${parts[0]} --> ${parts[1]}\n")
+            } else if (parts.size == 3) {
+                append("${parts[0]} --> ${parts[1]} : ${parts[2]}\n")
+            }
+        }
+        append("@enduml\n")
+    }
+    return plantUmlCode
+}

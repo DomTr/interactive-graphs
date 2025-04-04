@@ -6,17 +6,13 @@ plugins {
     application
 }
 dependencies {
-    implementation("net.sourceforge.plantuml:plantuml:1.2023.9") // Check for the latest version
+    implementation("net.sourceforge.plantuml:plantuml:1.2023.9")
+    implementation("org.openjfx:javafx-swing:21")  // required for SwingFXUtils
 }
 
 javafx {
-    // will pull in transitive modules
-    modules("javafx.controls", "javafx.fxml") // replace with what you modules need
-
-    // another option is to use:
-    // modules = listOf("javafx.controls", "javafx.fxml")
-
-    version = "21.0.1" // or whatever version you're using
+    modules("javafx.controls", "javafx.fxml", "javafx.swing")
+    version = "21.0.1"
 }
 group = "org.example"
 version = "1.0-SNAPSHOT"

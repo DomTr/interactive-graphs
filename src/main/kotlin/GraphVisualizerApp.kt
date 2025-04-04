@@ -10,6 +10,7 @@ import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.*
+import javafx.stage.DirectoryChooser
 import javafx.stage.FileChooser
 import javafx.stage.Stage
 import net.sourceforge.plantuml.FileFormat
@@ -18,6 +19,8 @@ import net.sourceforge.plantuml.SourceStringReader
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import javafx.embed.swing.SwingFXUtils
+import javax.imageio.ImageIO
 
 class GraphVisualizerApp : Application() {
     private val graphInputArea = TextArea()
@@ -43,7 +46,6 @@ class GraphVisualizerApp : Application() {
         vertexListView.setCellFactory { _ ->
             object : ListCell<Pair<String, SimpleBooleanProperty>>() {
                 private val checkBox = CheckBox()
-
                 init {
                     // Listener to handle checkbox action manually
                     checkBox.setOnAction {
@@ -96,6 +98,12 @@ class GraphVisualizerApp : Application() {
         loadGraphFromFile.setOnMouseExited {loadGraphFromFile.style = ""}
         loadGraphFromFile.setOnMouseClicked {loadGraphFromFile.style = "-fx-border-color: blue"}
 
+        val saveGraphButton = Button("Save graph")
+        saveGraphButton.setOnAction { this.saveGraphHandler(primaryStage)}
+        saveGraphButton.setOnMouseEntered { saveGraphButton.style = "-fx-background-color: lightblue;" }
+        saveGraphButton.setOnMouseExited {saveGraphButton.style = ""}
+        saveGraphButton.setOnMouseClicked {saveGraphButton.style = "-fx-border-color: blue"}
+
         // Graph Display Area
         val graphPane = StackPane()
         val scrollPane = ScrollPane()
@@ -109,7 +117,7 @@ class GraphVisualizerApp : Application() {
         graphPane.children.add(scrollPane)
 
         val root = BorderPane().apply {
-            top = VBox(5.0, inputLabel, graphInputArea, loadGraphLarge, loadGraphMedium, loadGraphFromFile)
+            top = VBox(5.0, inputLabel, graphInputArea, loadGraphLarge, loadGraphMedium, loadGraphFromFile, saveGraphButton)
             left = leftPane
             center = scrollPane
         }
@@ -119,7 +127,6 @@ class GraphVisualizerApp : Application() {
             scene = Scene(root, 1000.0, 1000.0)
             show()
         }
-
         updateGraph() // Generate initial graph
     }
 
@@ -179,9 +186,36 @@ class GraphVisualizerApp : Application() {
             println(selectedFile.path)
             loadGraphFromFile(selectedFile.path)
         } else {
-            showAlert("Error", "No file selected")
+            showAlert("Error", "No file selected", AlertType.ERROR)
         }
     }
+    private fun saveGraphHandler(primaryStage: Stage) {
+        val fileChooser = FileChooser()
+        fileChooser.title = "Save Graph As"
+        fileChooser.initialFileName = "graph.png"  // Initial name
+
+        // Set file extension filter
+        fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("PNG Image", "*.png"))
+
+        val selectedFile = fileChooser.showSaveDialog(primaryStage)
+        if (selectedFile != null) {
+            println("Saving to: ${selectedFile.absolutePath}")// For debugging
+            // Write the image to this file
+            saveGraphToFile(selectedFile)
+        } else {
+            showAlert("Cancelled", "No file was selected.", AlertType.ERROR) // For debugging
+        }
+    }
+    private fun saveGraphToFile(file: File) {
+        val image = graphImageView.image
+        if (image != null) {
+            val bufferedImage = SwingFXUtils.fromFXImage(image, null)
+            ImageIO.write(bufferedImage, "png", file)
+        } else {
+            showAlert("Error", "No image to save.", AlertType.ERROR)
+        }
+    }
+
     private fun loadGraphFromFile(fileName: String) {
         val graph = readGraphPrimitive(fileName)
         graphInputArea.text = graph
@@ -240,23 +274,14 @@ class GraphVisualizerApp : Application() {
                 }else if (parts.size == 3 && parts[0] in enabledVertices && parts[1] in enabledVertices) {
                     append("${parts[0]} --> ${parts[1]} : ${parts[2]}\n")
                 }
-                // Most likely not needed anymore
-                /*
-                else if (parts[0] !in enabledVertices && parts[1] in enabledVertices) {
-                    append("rectangle ${parts[1]}\n")
-                } else if (parts[0] in enabledVertices && parts[1] !in enabledVertices) {
-                    append("rectangle ${parts[0]}\n")
-                }
-                 */
-
             }
             append("@enduml\n")
         }
         try {
             val reader = SourceStringReader(plantUmlCode)
-            val diagramDescription = reader.generateDiagramDescription() // Ensure it's non-null
+            val diagramDescription = reader.generateDiagramDescription()
 
-            if (diagramDescription.description.contains("Syntax Error")) { // Check for syntax error
+            if (diagramDescription.description.contains("Syntax Error")) {
                 throw IllegalArgumentException("Invalid PlantUML syntax detected!")
             }
 
@@ -275,14 +300,17 @@ class GraphVisualizerApp : Application() {
                 parentPane?.minHeight = graphImageView.fitHeight
             }
         } catch (e: Exception) {
-            showAlert("Error", "Invalid graph input\n${e.message}")
+            showAlert("Error", "Invalid graph input\n${e.message}", AlertType.ERROR)
         }
     }
     /** Error handling **/
-    private fun showAlert(title: String, message: String) {
+    private fun showAlert(title: String, message: String, alertType: AlertType) {
         Platform.runLater {
+            var alert = Alert(Alert.AlertType.ERROR, message, ButtonType.OK)
+            if (alertType == AlertType.SUCCESS) {
+                alert = Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK)
+            }
             graphImageView.image = null // Remove previous image
-            val alert = Alert(Alert.AlertType.ERROR, message, ButtonType.OK)
             alert.title = title
             alert.headerText = title // Show title in dialog header
             alert.showAndWait()

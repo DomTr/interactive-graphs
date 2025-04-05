@@ -1,17 +1,17 @@
+import buttons.*
 import javafx.animation.PauseTransition
 import javafx.application.Application
 import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
+import javafx.geometry.Insets
 import javafx.scene.Group
 import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.*
-import javafx.stage.DirectoryChooser
-import javafx.stage.FileChooser
 import javafx.stage.Stage
 import net.sourceforge.plantuml.FileFormat
 import net.sourceforge.plantuml.FileFormatOption
@@ -19,8 +19,8 @@ import net.sourceforge.plantuml.SourceStringReader
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import javafx.embed.swing.SwingFXUtils
-import javax.imageio.ImageIO
+import javafx.scene.control.ButtonType
+
 
 class GraphVisualizerApp : Application() {
     private val graphInputArea = TextArea()
@@ -34,7 +34,7 @@ class GraphVisualizerApp : Application() {
 
     override fun start(primaryStage: Stage) {
         val inputLabel = Label("Graph Input (Edge List, e.g., A -> B):")
-        graphInputArea.text = "A -> B : 2\nB -> C:3\nC -> A"  // Default example
+        graphInputArea.text = "A -> B : 2\nB -> C:3\nC -> A\n"  // Default example
         graphInputArea.textProperty().addListener { _, _, _ ->
             updateDelay.stop()
             updateDelay.setOnFinished { updateGraph() }
@@ -76,48 +76,59 @@ class GraphVisualizerApp : Application() {
                 }
             }
         }
-
-
         val leftPane = VBox(10.0, Label("Vertex List:"), vertexListView)
         leftPane.prefWidth = 200.0
+        val graphLoader = GraphLoaderTXT(primaryStage, ::updateGraph, ::showAlert, ::changeGraphInputArea)
+        val graphLoaderJSON = GraphLoaderJSON(primaryStage, ::updateGraph, ::showAlert, ::changeGraphInputArea)
+        val graphLoaderML = GraphLoaderGraphML(primaryStage, ::updateGraph, ::showAlert, ::changeGraphInputArea)
+        val graphSaverPNG = GraphSaverPNG(primaryStage, ::showAlert, ::getImage,)
+        val graphSaverJSON = GraphSaverJSON(primaryStage, ::showAlert, ::getGraphInputAreaText)
+        val graphSaverGraphML = GraphSaverGraphML(primaryStage, ::showAlert, ::getGraphInputAreaText)
+        val graphSaverTXT = GraphSaverTXT(primaryStage, ::showAlert, ::getGraphInputAreaText)
 
-        val loadGraphLarge = Button("Load large graph")
-        loadGraphLarge.setOnAction { this.loadLargeGraphHandler()}
-        loadGraphLarge.setOnMouseEntered { loadGraphLarge.style = "-fx-background-color: lightblue;" }
-        loadGraphLarge.setOnMouseExited {loadGraphLarge.style = ""}
-        loadGraphLarge.setOnMouseClicked {loadGraphLarge.style = "-fx-border-color: blue"}
 
-        val loadGraphMedium = Button("Load medium graph")
-        loadGraphMedium.setOnAction { this.loadMediumGraphHandler()}
-        loadGraphMedium.setOnMouseEntered { loadGraphMedium.style = "-fx-background-color: lightblue;" }
-        loadGraphMedium.setOnMouseExited {loadGraphMedium.style = ""}
-        loadGraphMedium.setOnMouseClicked {loadGraphMedium.style = "-fx-border-color: blue"}
-        val loadGraphFromFile = Button("Load graph from file")
-        loadGraphFromFile.setOnAction { this.loadGraphFromFileHandler(primaryStage)}
-        loadGraphFromFile.setOnMouseEntered { loadGraphFromFile.style = "-fx-background-color: lightblue;" }
-        loadGraphFromFile.setOnMouseExited {loadGraphFromFile.style = ""}
-        loadGraphFromFile.setOnMouseClicked {loadGraphFromFile.style = "-fx-border-color: blue"}
+        val loadLargeGraph = graphLoader.createLoadGraphButton("Load large graph", "exampleGraphs/largeGraph.txt")
+        val loadMediumGraph = graphLoader.createLoadGraphButton("Load medium graph", "exampleGraphs/mediumGraph.txt")
+        val loadGraphFromFile = graphLoader.createLoadGraphButton("Load graph from file", "")
+        val loadGraphFromJSON = graphLoaderJSON.createLoadGraphButton("Load graph from JSON", "")
+        val loadGraphFromGraphML = graphLoaderML.createLoadGraphButton("Load graph from graphML", "")
 
-        val saveGraphButton = Button("Save graph")
-        saveGraphButton.setOnAction { this.saveGraphHandler(primaryStage)}
-        saveGraphButton.setOnMouseEntered { saveGraphButton.style = "-fx-background-color: lightblue;" }
-        saveGraphButton.setOnMouseExited {saveGraphButton.style = ""}
-        saveGraphButton.setOnMouseClicked {saveGraphButton.style = "-fx-border-color: blue"}
+        val saveGraphPNG = graphSaverPNG.createSaveGraphButton("Save graph as PNG")
+        val saveGraphJSON = graphSaverJSON.createSaveGraphButton("Save graph as JSON")
+        val saveGraphGraphML = graphSaverGraphML.createSaveGraphButton("Save graph in graphML")
+        val saveGraphTXT = graphSaverTXT.createSaveGraphButton("Save graph in TXT")
 
-        // Graph Display Area
+        val exampleButtons = VBox(5.0, loadLargeGraph, loadMediumGraph)
+        val fileButtons = VBox(5.0, loadGraphFromFile, saveGraphTXT, saveGraphPNG)
+        val jsonButtons = VBox(5.0, loadGraphFromJSON, saveGraphJSON)
+        val graphMLButtons = VBox(5.0, loadGraphFromGraphML, saveGraphGraphML)
+
+        val examplePane = TitledPane("Examples", exampleButtons)
+        val filePane = TitledPane("File Operations", fileButtons)
+        val jsonPane = TitledPane("JSON", jsonButtons)
+        val graphMLPane = TitledPane("GraphML", graphMLButtons)
+
+        val buttonAccordion = Accordion(examplePane, filePane, jsonPane, graphMLPane)
+        buttonAccordion.expandedPane = examplePane // Optional: expand by default
+        buttonAccordion.prefWidth = 200.0
+
+        val inputSection = VBox(5.0, inputLabel, graphInputArea)
+        inputSection.prefWidth = 400.0
+
+        val topBox = HBox(20.0, inputSection, buttonAccordion)
+        topBox.padding = Insets(10.0)
+
         val graphPane = StackPane()
         val scrollPane = ScrollPane()
         scrollPane.setPrefSize(1000.0, 1000.0)
         val imageGroup = Group()
         imageGroup.children.add(graphImageView)
-
         graphImageViewSetUp(imageGroup, scrollPane)
-
         scrollPane.content = imageGroup
         graphPane.children.add(scrollPane)
 
         val root = BorderPane().apply {
-            top = VBox(5.0, inputLabel, graphInputArea, loadGraphLarge, loadGraphMedium, loadGraphFromFile, saveGraphButton)
+            top = topBox
             left = leftPane
             center = scrollPane
         }
@@ -165,61 +176,17 @@ class GraphVisualizerApp : Application() {
         scrollPane.vbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
     }
 
-    private fun loadMediumGraphHandler() {
-        loadGraphFromFile("exampleGraphs/mediumGraph.txt")
-        updateGraph()
+    private fun getImage(): Image{
+        return graphImageView.image
     }
-    private fun loadLargeGraphHandler() {
-        loadGraphFromFile("exampleGraphs/largeGraph.txt")
-        updateGraph()
-    }
-    private fun loadGraphFromFileHandler(primaryStage: Stage) {
-        val fileChooser = FileChooser()
-        val initialDirectory = File(System.getProperty("user.home"))
-        fileChooser.initialDirectory = initialDirectory
-        fileChooser.title = "Select file of graph to be displayed"
-        val ex1 = FileChooser.ExtensionFilter("TXT files (*.txt)", "*.txt")
-        fileChooser.extensionFilters.addAll(ex1)
-        val selectedFile = fileChooser.showOpenDialog(primaryStage)
-        if (selectedFile != null) {
-            println("Open file")
-            println(selectedFile.path)
-            loadGraphFromFile(selectedFile.path)
-        } else {
-            showAlert("Error", "No file selected", AlertType.ERROR)
-        }
-    }
-    private fun saveGraphHandler(primaryStage: Stage) {
-        val fileChooser = FileChooser()
-        fileChooser.title = "Save Graph As"
-        fileChooser.initialFileName = "graph.png"  // Initial name
-
-        // Set file extension filter
-        fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("PNG Image", "*.png"))
-
-        val selectedFile = fileChooser.showSaveDialog(primaryStage)
-        if (selectedFile != null) {
-            println("Saving to: ${selectedFile.absolutePath}")// For debugging
-            // Write the image to this file
-            saveGraphToFile(selectedFile)
-        } else {
-            showAlert("Cancelled", "No file was selected.", AlertType.ERROR) // For debugging
-        }
-    }
-    private fun saveGraphToFile(file: File) {
-        val image = graphImageView.image
-        if (image != null) {
-            val bufferedImage = SwingFXUtils.fromFXImage(image, null)
-            ImageIO.write(bufferedImage, "png", file)
-        } else {
-            showAlert("Error", "No image to save.", AlertType.ERROR)
-        }
+    private fun getGraphInputAreaText(): String{
+        return graphInputArea.text
     }
 
-    private fun loadGraphFromFile(fileName: String) {
-        val graph = readGraphPrimitive(fileName)
+    private fun changeGraphInputArea(graph: String) {
         graphInputArea.text = graph
     }
+
     /** Parses the input text and updates the vertex list & diagram **/
     private fun updateGraph() {
         val inputText = graphInputArea.text.trim()
@@ -320,12 +287,6 @@ class GraphVisualizerApp : Application() {
 
 fun main() {
     Application.launch(GraphVisualizerApp::class.java)
-}
-
-fun readGraphPrimitive(fileName: String): String {
-    val graphString = File(fileName).bufferedReader().readLines()
-    val edges = graphString.filter { it.contains("->") }.map { it.trim() }
-    return buildString { edges.forEach { e -> append(e + "\n") } }
 }
 
 // May be not needed anymore

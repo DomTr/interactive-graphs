@@ -19,4 +19,4 @@ A javaFX GUI application written in Kotlin that allows users to visualize and in
 2. **File support**: Load and save graphs in multiple formats, including text, JSON, and GraphM
 3. **Graph examples**: Includes a few sample graphs to help users get started.
 
-<img src="https://raw.githubusercontent.com/DomTr/interactive-graphs/main/assets/showcase.pdf" alt="Project Demo GIF" width="400"/>
+<img src="https://raw.githubusercontent.com/DomTr/interactive-graphs/main/assets/showcase.gif" alt="Project Demo GIF" width="400"/>

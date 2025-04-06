@@ -19,6 +19,7 @@ class GraphLoaderTXT (
         loadGraph.setOnMouseEntered { loadGraph.style = "-fx-background-color: lightblue;" }
         loadGraph.setOnMouseExited { loadGraph.style = "" }
         loadGraph.setOnMouseClicked { loadGraph.style = "-fx-border-color: blue" }
+        loadGraph.prefWidth = 170.0
         return loadGraph
     }
     private fun handleLoadGraph(fileName:String) {

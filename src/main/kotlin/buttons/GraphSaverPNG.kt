@@ -19,6 +19,7 @@ class GraphSaverPNG(
         saveGraph.setOnMouseEntered { saveGraph.style = "-fx-background-color: lightblue;" }
         saveGraph.setOnMouseExited { saveGraph.style = "" }
         saveGraph.setOnMouseClicked { saveGraph.style = "-fx-border-color: blue" }
+        saveGraph.prefWidth = 170.0
         return saveGraph
     }
     private fun handleSaveGraph() {

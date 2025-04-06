@@ -13,7 +13,6 @@ private val jsonFormatter = Json {
     encodeDefaults = true
     ignoreUnknownKeys = true
 }
-
 class GraphLoaderJSON (
     primaryStage: Stage,
     updateGraph: () -> Unit,
@@ -28,7 +27,7 @@ class GraphLoaderJSON (
         loadGraph.setOnMouseClicked { loadGraph.style = "-fx-border-color: blue" }
         return loadGraph
     }
-    private fun handleLoadGraph() { // handleLoadGraphFromFile
+    private fun handleLoadGraph() {
         val fileChooser = FileChooser()
         val initialDirectory = File(System.getProperty("user.home"))
         fileChooser.initialDirectory = initialDirectory

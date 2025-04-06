@@ -1,0 +1,37 @@
+{
+    "vertices": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "G"
+    ],
+    "edges": [
+        {
+            "from": "A",
+            "to": "B",
+            "label": "2"
+        },
+        {
+            "from": "B",
+            "to": "C",
+            "label": "3"
+        },
+        {
+            "from": "C",
+            "to": "D",
+            "label": "3"
+        },
+        {
+            "from": "D",
+            "to": "A",
+            "label": "5"
+        },
+        {
+            "from": "G",
+            "to": "G",
+            "label": null
+        }
+    ]
+}
+

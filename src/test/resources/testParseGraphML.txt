@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+  <key attr.name="label" attr.type="string" for="edge" id="label"/>
+  <graph edgedefault="directed" id="G">
+    <node id="A"/>
+    <node id="B"/>
+    <node id="G"/>
+    <node id="H"/>
+    <node id="J"/>
+    <edge id="e0" source="A" target="B">
+      <data key="label">2</data>
+    </edge>
+    <edge id="e1" source="G" target="G"/>
+    <edge id="e2" source="H" target="B"/>
+    <edge id="e3" source="H" target="G">
+      <data key="label">19</data>
+    </edge>
+    <edge id="e4" source="J" target="A"/>
+  </graph>
+</graphml>

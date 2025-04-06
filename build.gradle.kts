@@ -11,6 +11,8 @@ dependencies {
     implementation("org.openjfx:javafx-swing:21")  // required for SwingFXUtils
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("javax.xml.bind:jaxb-api:2.3.1") // DOM parsing/writing
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0") // JUnit 5 support
 }
 
 javafx {

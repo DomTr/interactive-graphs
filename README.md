@@ -16,7 +16,8 @@ A javaFX GUI application written in Kotlin that allows users to visualize and in
 
 **Additional Features**:
 1. **Edge labels**: Edges can be labeled which is useful for indicating edge-weights or other data.
-2. **File support**: Load and save graphs in multiple formats, including text, JSON, and GraphML
+2. **File support**: Load and save graphs in multiple formats, including text, JSON, and GraphML. It is also possible to save the graph as a JPG picture.
 3. **Graph examples**: Includes a few sample graphs to help users get started.
+4. **Navigation**: it is possible to navigate inside Diagram Display area. Users can zoom-in/zoom-out.
 
 <img src="https://raw.githubusercontent.com/DomTr/interactive-graphs/main/assets/showcase.gif" alt="Project Demo GIF" width="400"/>

@@ -11,7 +11,7 @@ A javaFX GUI application written in Kotlin that allows users to visualize and in
 3. **Vertex list**:
    - Vertex list displaying all vertices in the graph. 
    - The list is automatically updated when editing the graph input area. 
-   - It gives the ability to enable or disable specific vertices. If a vertex is disabled, it no longer appears in the diagram. 
+   - It gives the ability to enable or disable specific vertices. If a vertex is disabled, it no longer appears in the diagram, but it doesn't get deleted from the Graph Input area.
 
 
 **Additional Features**:
